@@ -80,6 +80,39 @@ to run. The opportunity is to wire it into Claude Code's harness so the loop clo
    `sandbox` block to `settings.json` while the `/sandbox` panel writes `settings.local.json`, the
    local file wins and cperm's drift detection must account for it.
 
+## Two axes of decoupling
+
+The Phase 3 work (internal `Policy` as source of truth, a `render.Renderer` adapter, and a
+single `claudecode` implementation) is the seam that two larger directions build on. Both are
+interface/implementation expansions of that same boundary — neither is in scope yet, but the
+architecture is chosen so they don't require a redesign later.
+
+- **Vertical — permissions → settings.** Today a module composes permission rules (allow/ask/
+  deny) plus `env`, and arbitrary top-level keys ride along via the `settings` passthrough. The
+  natural growth is to compose the *whole* settings document as a first-class concern (sandbox,
+  hooks, MCP servers, `additionalDirectories`, …). The catch: this is a **merge-semantics**
+  change, not a rename — flat array concat+dedup gives way to deep/shallow object merge with
+  per-key strategies (last-wins / error / warn) for scalars like `defaultMode`. That is exactly
+  the "general composition engine" in `CLAUDE.md`. When we commit to it, the internal `Policy`
+  type broadens (likely renamed to `Config`/`Document`) behind the unchanged renderer seam. This
+  is also why the `cperm` name becomes a misnomer; defer the rename until scope settles.
+
+- **Horizontal — Claude → any agent.** The `Renderer` interface is agent-neutral by
+  construction, so adding `render/codex`, `render/gemini`, etc. is the mechanism for targeting
+  other agent brands. The easy part is the interface; the hard part is the **neutral model**.
+  These agents express "what the agent may do" at very different granularities:
+  - Claude Code — fine-grained rule strings (`Bash(git push:*)`, `Read(**/.env)`, MCP, sandbox), allow/ask/deny.
+  - Codex CLI — coarse modes: an approval policy (untrusted / on-failure / never) plus a sandbox mode (read-only / workspace-write / full), in TOML.
+  - Gemini CLI — tool allow/exclude lists (`coreTools` / `excludeTools`) plus MCP, in its own settings.json.
+
+  A neutral core rich enough to project onto all of them is lossy in the coarse direction:
+  Claude's per-command `ask` has no clean Codex equivalent, so a `codex` renderer must coarsen
+  *and warn about what it dropped* rather than flatten silently. The payoff is the real DX goal —
+  author one declarative policy, render it per-agent, feed whichever harness you're driving.
+
+The throughline: do Phase 3's seam well now; both expansions become additive (a richer core
+type behind the seam; more renderers behind the interface) rather than rewrites.
+
 ## See also
 
 - `CLAUDE.md` — architecture, design principles, and the longer-term
