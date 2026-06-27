@@ -1,5 +1,7 @@
 # cperm
 
+[![CI](https://github.com/ErikOlson/cperm/actions/workflows/ci.yml/badge.svg)](https://github.com/ErikOlson/cperm/actions/workflows/ci.yml)
+
 **Composable Claude Code permissions.**
 
 Claude Code's permission system is powerful but manual. You approve commands one by one, they accumulate in `settings.json`, and eventually every project has a slightly different, organically-grown permissions file that you can't reproduce, can't share, and can't tell if it's drifted.
