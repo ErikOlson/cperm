@@ -1,0 +1,20 @@
+{
+  "name": "python",
+  "description": "Python toolchain — interpreter, pip, venv, testing",
+  "version": "0.1.0",
+  "requires": ["base"],
+  "permissions": {
+    "allow": [
+      "Bash(python:*)",
+      "Bash(python3:*)",
+      "Bash(pip:*)",
+      "Bash(pip3:*)",
+      "Bash(poetry:*)",
+      "Bash(uv:*)",
+      "Bash(pytest:*)",
+      "Bash(ruff:*)",
+      "Bash(mypy:*)",
+      "Bash(black:*)"
+    ]
+  }
+}

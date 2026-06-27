@@ -1,0 +1,15 @@
+{
+  "name": "agent-teams",
+  "description": "Enable Claude Code experimental agent teams with tmux support",
+  "version": "0.1.0",
+  "requires": ["base"],
+  "permissions": {
+    "allow": [
+      "Bash(tmux:*)",
+      "Bash(pkill:*)"
+    ]
+  },
+  "env": {
+    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
+  }
+}

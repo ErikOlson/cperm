@@ -1,0 +1,15 @@
+{
+  "name": "go",
+  "description": "Go toolchain — build, test, lint",
+  "version": "0.1.0",
+  "requires": ["base"],
+  "permissions": {
+    "allow": [
+      "Bash(go:*)",
+      "Bash(golangci-lint:*)",
+      "Bash(dlv:*)",
+      "Bash(gotests:*)",
+      "Bash(staticcheck:*)"
+    ]
+  }
+}

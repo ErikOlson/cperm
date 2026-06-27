@@ -1,0 +1,36 @@
+# Build artifacts
+/cperm
+/dist/
+*.exe
+*.test
+*.out
+
+# Go
+/vendor/
+go.work
+go.work.sum
+
+# Nix
+/result
+/result-*
+
+# Local environment & secrets
+.env
+.env.*
+*.local
+.claude/settings.local.json
+
+# OS junk
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+Thumbs.db
+
+# Editor / IDE
+*.swp
+*.swo
+*~
+.idea/
+.vscode/

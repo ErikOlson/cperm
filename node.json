@@ -1,0 +1,22 @@
+{
+  "name": "node",
+  "description": "Node.js/JavaScript/TypeScript toolchain",
+  "version": "0.1.0",
+  "requires": ["base"],
+  "permissions": {
+    "allow": [
+      "Bash(node:*)",
+      "Bash(npm:*)",
+      "Bash(npx:*)",
+      "Bash(pnpm:*)",
+      "Bash(yarn:*)",
+      "Bash(tsc:*)",
+      "Bash(eslint:*)",
+      "Bash(prettier:*)",
+      "Bash(jest:*)",
+      "Bash(vitest:*)",
+      "Bash(esbuild:*)",
+      "Bash(vite:*)"
+    ]
+  }
+}

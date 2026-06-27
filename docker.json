@@ -1,0 +1,14 @@
+{
+  "name": "docker",
+  "description": "Docker and container operations",
+  "version": "0.1.0",
+  "permissions": {
+    "allow": [
+      "Bash(docker:*)",
+      "Bash(docker-compose:*)"
+    ],
+    "ask": [
+      "Bash(docker push:*)"
+    ]
+  }
+}
