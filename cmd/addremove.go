@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"slices"
 
 	"github.com/spf13/cobra"
 
@@ -47,11 +48,9 @@ func runAdd(cmd *cobra.Command, args []string) error {
 	}
 
 	// Check if already present
-	for _, m := range cf.Modules {
-		if m == moduleName {
-			printWarn(fmt.Sprintf("Module %q is already in compose.json", moduleName))
-			return nil
-		}
+	if slices.Contains(cf.Modules, moduleName) {
+		printWarn(fmt.Sprintf("Module %q is already in compose.json", moduleName))
+		return nil
 	}
 
 	cf.Modules = append(cf.Modules, moduleName)

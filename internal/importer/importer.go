@@ -2,6 +2,7 @@ package importer
 
 import (
 	"fmt"
+	"slices"
 	"sort"
 	"strings"
 
@@ -52,13 +53,13 @@ func Analyze(perms model.Permissions, s *store.Store) (*ImportResult, error) {
 			matches = append(matches, mr)
 			for _, r := range mr.Matched {
 				// Figure out which array this rule came from
-				if contains(mod.Permissions.Allow, r) && contains(perms.Allow, r) {
+				if slices.Contains(mod.Permissions.Allow, r) && slices.Contains(perms.Allow, r) {
 					coveredAllow[r] = true
 				}
-				if contains(mod.Permissions.Deny, r) && contains(perms.Deny, r) {
+				if slices.Contains(mod.Permissions.Deny, r) && slices.Contains(perms.Deny, r) {
 					coveredDeny[r] = true
 				}
-				if contains(mod.Permissions.Ask, r) && contains(perms.Ask, r) {
+				if slices.Contains(mod.Permissions.Ask, r) && slices.Contains(perms.Ask, r) {
 					coveredAsk[r] = true
 				}
 			}
@@ -92,9 +93,8 @@ func SuggestModuleName(rules []string) string {
 	// Look for common prefixes in Bash rules
 	prefixes := make(map[string]int)
 	for _, r := range rules {
-		if strings.HasPrefix(r, "Bash(") {
+		if inner, ok := strings.CutPrefix(r, "Bash("); ok {
 			// Extract the command name: Bash(go:*) -> go
-			inner := strings.TrimPrefix(r, "Bash(")
 			inner = strings.TrimSuffix(inner, ")")
 			if idx := strings.IndexAny(inner, ": "); idx > 0 {
 				prefixes[inner[:idx]]++
@@ -136,21 +136,21 @@ func matchModule(mod *model.Module, perms *model.Permissions) MatchResult {
 
 	// Check all rules in the module against the settings
 	for _, r := range mod.Permissions.Allow {
-		if contains(perms.Allow, r) {
+		if slices.Contains(perms.Allow, r) {
 			matched = append(matched, r)
 		} else {
 			unmatched = append(unmatched, r)
 		}
 	}
 	for _, r := range mod.Permissions.Deny {
-		if contains(perms.Deny, r) {
+		if slices.Contains(perms.Deny, r) {
 			matched = append(matched, r)
 		} else {
 			unmatched = append(unmatched, r)
 		}
 	}
 	for _, r := range mod.Permissions.Ask {
-		if contains(perms.Ask, r) {
+		if slices.Contains(perms.Ask, r) {
 			matched = append(matched, r)
 		} else {
 			unmatched = append(unmatched, r)
@@ -170,15 +170,6 @@ func matchModule(mod *model.Module, perms *model.Permissions) MatchResult {
 		Total:      total,
 		Coverage:   coverage,
 	}
-}
-
-func contains(slice []string, item string) bool {
-	for _, s := range slice {
-		if s == item {
-			return true
-		}
-	}
-	return false
 }
 
 func diff(all []string, covered map[string]bool) []string {

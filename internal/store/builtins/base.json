@@ -6,7 +6,6 @@
     "allow": [
       "Edit",
       "Write",
-      "MultiEdit",
       "Read",
       "TodoWrite",
       "Bash(ls:*)",
