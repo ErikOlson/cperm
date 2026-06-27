@@ -69,8 +69,8 @@ func runAdd(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("recomposing: %w", err)
 	}
 
-	outputPath := composer.OutputPath(projectDir)
-	if err := composer.WriteSettings(outputPath, result); err != nil {
+	outputPath, err := writeComposed(projectDir, result)
+	if err != nil {
 		return err
 	}
 
@@ -129,8 +129,8 @@ func runRemove(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("recomposing: %w", err)
 	}
 
-	outputPath := composer.OutputPath(projectDir)
-	if err := composer.WriteSettings(outputPath, result); err != nil {
+	outputPath, err := writeComposed(projectDir, result)
+	if err != nil {
 		return err
 	}
 

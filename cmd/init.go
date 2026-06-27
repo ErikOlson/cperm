@@ -139,8 +139,8 @@ func runInit(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("composing: %w", err)
 	}
 
-	outputPath := composer.OutputPath(projectDir)
-	if err := composer.WriteSettings(outputPath, result); err != nil {
+	outputPath, err := writeComposed(projectDir, result)
+	if err != nil {
 		return fmt.Errorf("writing settings: %w", err)
 	}
 

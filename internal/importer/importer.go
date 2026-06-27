@@ -1,9 +1,7 @@
 package importer
 
 import (
-	"encoding/json"
 	"fmt"
-	"os"
 	"sort"
 	"strings"
 
@@ -22,7 +20,7 @@ type MatchResult struct {
 
 // ImportResult holds the complete analysis of an import operation.
 type ImportResult struct {
-	Matches       []MatchResult
+	Matches        []MatchResult
 	UnmatchedAllow []string // allow rules not covered by any module
 	UnmatchedDeny  []string
 	UnmatchedAsk   []string
@@ -30,22 +28,9 @@ type ImportResult struct {
 	CoveredRules   int
 }
 
-// AnalyzeSettings reads a settings.json and compares it against all available modules.
-func AnalyzeSettings(path string, s *store.Store) (*ImportResult, error) {
-	data, err := os.ReadFile(path)
-	if err != nil {
-		return nil, fmt.Errorf("reading settings: %w", err)
-	}
-
-	// Parse the settings file - we need to handle the nested permissions structure
-	var raw struct {
-		Permissions model.Permissions `json:"permissions"`
-	}
-	if err := json.Unmarshal(data, &raw); err != nil {
-		return nil, fmt.Errorf("parsing settings: %w", err)
-	}
-
-	perms := raw.Permissions
+// Analyze compares a set of permissions (already parsed from an agent's
+// settings by a render.Renderer) against all available modules.
+func Analyze(perms model.Permissions, s *store.Store) (*ImportResult, error) {
 	totalRules := len(perms.Allow) + len(perms.Deny) + len(perms.Ask)
 
 	// Load all modules

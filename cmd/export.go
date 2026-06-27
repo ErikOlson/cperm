@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"encoding/json"
 	"fmt"
 
 	"github.com/spf13/cobra"
@@ -38,12 +37,11 @@ func runExport(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	output := buildOutputMap(result)
-	data, err := json.MarshalIndent(output, "", "  ")
+	data, err := getRenderer().Render(result.Policy)
 	if err != nil {
 		return err
 	}
 
-	fmt.Println(string(data))
+	fmt.Print(string(data))
 	return nil
 }

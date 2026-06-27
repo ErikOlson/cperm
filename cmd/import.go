@@ -32,7 +32,7 @@ func runImport(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	path := composer.OutputPath(projectDir)
+	path := getRenderer().OutputPath(projectDir)
 	if len(args) > 0 {
 		path = args[0]
 	}
@@ -42,7 +42,16 @@ func runImport(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	result, err := importer.AnalyzeSettings(path, s)
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return fmt.Errorf("reading settings: %w", err)
+	}
+	policy, err := getRenderer().Parse(data)
+	if err != nil {
+		return fmt.Errorf("parsing settings: %w", err)
+	}
+
+	result, err := importer.Analyze(policy.Permissions, s)
 	if err != nil {
 		return err
 	}

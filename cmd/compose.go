@@ -1,14 +1,12 @@
 package cmd
 
 import (
-	"encoding/json"
 	"fmt"
 	"strings"
 
 	"github.com/spf13/cobra"
 
 	"github.com/erikmav/cperm/internal/composer"
-	"github.com/erikmav/cperm/internal/model"
 )
 
 var composeDryRun bool
@@ -47,18 +45,16 @@ func runCompose(cmd *cobra.Command, args []string) error {
 	}
 
 	if composeDryRun {
-		// Build the same output structure as WriteSettings
-		output := buildOutputMap(result)
-		data, err := json.MarshalIndent(output, "", "  ")
+		data, err := getRenderer().Render(result.Policy)
 		if err != nil {
 			return err
 		}
-		fmt.Println(string(data))
+		fmt.Print(string(data))
 		return nil
 	}
 
-	outputPath := composer.OutputPath(projectDir)
-	if err := composer.WriteSettings(outputPath, result); err != nil {
+	outputPath, err := writeComposed(projectDir, result)
+	if err != nil {
 		return err
 	}
 
@@ -85,26 +81,4 @@ func runCompose(cmd *cobra.Command, args []string) error {
 	}
 
 	return nil
-}
-
-func buildOutputMap(result *model.ComposedResult) map[string]any {
-	output := make(map[string]any)
-	perms := make(map[string]any)
-	if len(result.Settings.Permissions.Allow) > 0 {
-		perms["allow"] = result.Settings.Permissions.Allow
-	}
-	if len(result.Settings.Permissions.Deny) > 0 {
-		perms["deny"] = result.Settings.Permissions.Deny
-	}
-	if len(result.Settings.Permissions.Ask) > 0 {
-		perms["ask"] = result.Settings.Permissions.Ask
-	}
-	output["permissions"] = perms
-	if len(result.Settings.Env) > 0 {
-		output["env"] = result.Settings.Env
-	}
-	for k, v := range result.Settings.Extra {
-		output[k] = v
-	}
-	return output
 }

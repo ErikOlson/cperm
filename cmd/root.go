@@ -8,6 +8,8 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	"github.com/spf13/cobra"
 
+	"github.com/erikmav/cperm/internal/model"
+	"github.com/erikmav/cperm/internal/render"
 	"github.com/erikmav/cperm/internal/store"
 )
 
@@ -68,6 +70,31 @@ func getStore() (*store.Store, error) {
 // getProjectDir returns the current working directory.
 func getProjectDir() (string, error) {
 	return os.Getwd()
+}
+
+// getRenderer returns the wire-format adapter cperm renders settings through.
+// Today this is always Claude Code's settings.json; the indirection is the
+// single place to swap in a different agent format later.
+func getRenderer() render.Renderer {
+	return render.ClaudeCode{}
+}
+
+// writeComposed renders a composed result through the active renderer to its
+// output path, creating the parent directory as needed, and returns the path.
+func writeComposed(projectDir string, result *model.ComposedResult) (string, error) {
+	r := getRenderer()
+	data, err := r.Render(result.Policy)
+	if err != nil {
+		return "", err
+	}
+	path := r.OutputPath(projectDir)
+	if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+		return "", err
+	}
+	if err := os.WriteFile(path, data, 0644); err != nil {
+		return "", err
+	}
+	return path, nil
 }
 
 // formatPath makes a path relative to cwd for display.

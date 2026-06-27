@@ -12,7 +12,6 @@ import (
 
 const (
 	composeFileName = "compose.json"
-	settingsOutput  = "settings.json"
 	claudeDir       = ".claude"
 )
 
@@ -29,11 +28,6 @@ func New(s *store.Store) *Composer {
 // ComposeFilePath returns the expected path to the compose file in the project.
 func ComposeFilePath(projectDir string) string {
 	return filepath.Join(projectDir, claudeDir, composeFileName)
-}
-
-// OutputPath returns the expected path to the composed settings.json.
-func OutputPath(projectDir string) string {
-	return filepath.Join(projectDir, claudeDir, settingsOutput)
 }
 
 // LoadComposeFile reads and parses a compose.json.
@@ -124,19 +118,19 @@ func (c *Composer) Compose(cf *model.ComposeFile) (*model.ComposedResult, error)
 	// Detect conflicts (same rule in multiple arrays)
 	conflicts := detectConflicts(allAllow, allDeny, allAsk, sources)
 
-	// Build output settings
-	settings := model.ClaudeSettings{
+	// Build the composed policy (format-neutral source of truth).
+	policy := model.Policy{
 		Permissions: model.Permissions{
 			Allow: allAllow,
 			Deny:  allDeny,
 			Ask:   allAsk,
 		},
-		Env:   env,
-		Extra: cf.Settings,
+		Env:      env,
+		Settings: cf.Settings,
 	}
 
 	return &model.ComposedResult{
-		Settings:     settings,
+		Policy:       policy,
 		ModulesUsed:  resolved,
 		AllowCount:   len(allAllow),
 		DenyCount:    len(allDeny),
@@ -144,45 +138,6 @@ func (c *Composer) Compose(cf *model.ComposeFile) (*model.ComposedResult, error)
 		Deduplicated: beforeCount - afterCount,
 		Conflicts:    conflicts,
 	}, nil
-}
-
-// WriteSettings writes the composed settings to .claude/settings.json.
-func WriteSettings(path string, result *model.ComposedResult) error {
-	if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
-		return err
-	}
-
-	// Build the output JSON manually to support passthrough settings
-	output := make(map[string]any)
-
-	// Add permissions
-	perms := make(map[string]any)
-	if len(result.Settings.Permissions.Allow) > 0 {
-		perms["allow"] = result.Settings.Permissions.Allow
-	}
-	if len(result.Settings.Permissions.Deny) > 0 {
-		perms["deny"] = result.Settings.Permissions.Deny
-	}
-	if len(result.Settings.Permissions.Ask) > 0 {
-		perms["ask"] = result.Settings.Permissions.Ask
-	}
-	output["permissions"] = perms
-
-	// Add env if present
-	if len(result.Settings.Env) > 0 {
-		output["env"] = result.Settings.Env
-	}
-
-	// Merge passthrough settings at top level
-	for k, v := range result.Settings.Extra {
-		output[k] = v
-	}
-
-	data, err := json.MarshalIndent(output, "", "  ")
-	if err != nil {
-		return err
-	}
-	return os.WriteFile(path, append(data, '\n'), 0644)
 }
 
 // resolveModules expands module dependencies via topological sort.

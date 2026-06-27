@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
 	"strings"
@@ -9,7 +8,6 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/erikmav/cperm/internal/composer"
-	"github.com/erikmav/cperm/internal/model"
 )
 
 var statusCmd = &cobra.Command{
@@ -43,7 +41,7 @@ func runStatus(cmd *cobra.Command, args []string) error {
 	fmt.Printf("  Modules:  %s\n", strings.Join(cf.Modules, ", "))
 
 	// Check if settings.json exists
-	outputPath := composer.OutputPath(projectDir)
+	outputPath := getRenderer().OutputPath(projectDir)
 	settingsData, err := os.ReadFile(outputPath)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -64,21 +62,19 @@ func runStatus(cmd *cobra.Command, args []string) error {
 	}
 
 	// Parse what actually exists
-	var actualRaw struct {
-		Permissions model.Permissions `json:"permissions"`
-	}
-	if err := json.Unmarshal(settingsData, &actualRaw); err != nil {
+	actualPolicy, err := getRenderer().Parse(settingsData)
+	if err != nil {
 		return fmt.Errorf("parsing current settings.json: %w", err)
 	}
-	actual := actualRaw.Permissions
+	actual := actualPolicy.Permissions
 
 	// Diff
-	addedAllow := diffSlice(actual.Allow, expected.Settings.Permissions.Allow)
-	removedAllow := diffSlice(expected.Settings.Permissions.Allow, actual.Allow)
-	addedDeny := diffSlice(actual.Deny, expected.Settings.Permissions.Deny)
-	removedDeny := diffSlice(expected.Settings.Permissions.Deny, actual.Deny)
-	addedAsk := diffSlice(actual.Ask, expected.Settings.Permissions.Ask)
-	removedAsk := diffSlice(expected.Settings.Permissions.Ask, actual.Ask)
+	addedAllow := diffSlice(actual.Allow, expected.Policy.Permissions.Allow)
+	removedAllow := diffSlice(expected.Policy.Permissions.Allow, actual.Allow)
+	addedDeny := diffSlice(actual.Deny, expected.Policy.Permissions.Deny)
+	removedDeny := diffSlice(expected.Policy.Permissions.Deny, actual.Deny)
+	addedAsk := diffSlice(actual.Ask, expected.Policy.Permissions.Ask)
+	removedAsk := diffSlice(expected.Policy.Permissions.Ask, actual.Ask)
 
 	totalAdded := len(addedAllow) + len(addedDeny) + len(addedAsk)
 	totalRemoved := len(removedAllow) + len(removedDeny) + len(removedAsk)
