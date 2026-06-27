@@ -49,6 +49,37 @@ Note: confirm the exact precedence and that a `sandbox` block is honored in a ch
 building on this — the docs are explicit about the latter two scopes but do not show an
 example of `sandbox` in project `settings.json`.
 
+## Harness integration (future)
+
+cperm is already shaped like a small reconciliation harness: declarative source of truth
+(`compose.json` + modules), plan/apply (`compose` / `--dry-run` / `export`), drift detection
+(`status`), and reconciliation (`import`). Today that loop is a manual CLI you have to remember
+to run. The opportunity is to wire it into Claude Code's harness so the loop closes itself.
+
+1. **Hook-driven drift→import loop.** A Claude Code `Stop` / `PostToolUse` hook watches the
+   project's `settings.local.json`; when new approvals appear, it runs `cperm status` and nudges
+   the user to promote drifted rules into a module ("3 rules drifted — base / git / new?"). This
+   turns bottom-up discovery from "discipline you must remember" into something surfaced at the
+   moment it's relevant — the thing that makes the compose/import diff actually converge in
+   practice. Observed motivation: a single session accumulated eight near-duplicate
+   `Bash(git …)` approvals that the existing `git` module's one `Bash(git:*)` rule would have
+   subsumed entirely, plus one-off junk that `import` should drop rather than bucket. Related
+   surfaces: package the commands as a Claude Code **skill / slash command** so the agent itself
+   can invoke `import`/`compose`/`status`; a `SessionStart` hook that re-composes from
+   `compose.json` for reproducible setup; a git pre-commit guard running `cperm status` to keep a
+   team's policy from drifting.
+
+2. **Compose the whole `settings.json`, not just `permissions`.** Extend cperm past the
+   `permissions` block to also own `sandbox` (and other top-level keys), so one `cperm compose`
+   provisions a project's permission rules *and* the sandbox `allowWrite` paths / `allowedDomains`
+   a toolchain needs to function — e.g. a `go` module carrying both `Bash(go:*)` and the
+   `proxy.golang.org` domain plus the build-cache write path. This is the real fix to the friction
+   hit during the revival: the prompts we saw were sandbox *filesystem-boundary* prompts (build
+   cache, `~/.config/cperm` store), not permission-rule prompts, so a permissions-only tool can't
+   remove them. Couples with the `settings.local.json` precedence caveat above — if cperm writes a
+   `sandbox` block to `settings.json` while the `/sandbox` panel writes `settings.local.json`, the
+   local file wins and cperm's drift detection must account for it.
+
 ## See also
 
 - `CLAUDE.md` — architecture, design principles, and the longer-term
