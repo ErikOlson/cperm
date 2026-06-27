@@ -20,24 +20,28 @@ cperm/
     newmodule.go                   # Create new modules interactively
     export.go                      # Print composed output to stdout
   internal/
-    model/model.go                 # Core types: Module, ComposeFile, ClaudeSettings, ComposedResult
+    model/model.go                 # Core types: Module, ComposeFile, Policy, ComposedResult
     store/store.go                 # Module store CRUD (~/.config/cperm/modules/)
     store/embed.go                 # go:embed for built-in modules
     store/builtins/                # Embedded starter modules (JSON)
     composer/composer.go           # Merge engine: dependency resolution, dedup, conflict detection
+    render/render.go               # Renderer interface — the wire-format adapter boundary
+    render/claudecode.go           # Claude Code settings.json renderer/parser (sole impl today)
     importer/importer.go           # Reverse-engineer modules from existing settings.json
-  modules/                         # Source copies of built-in modules (also in store/builtins/)
-  flake.nix                        # Nix flake for building and distribution
-  .goreleaser.yaml                 # Cross-compilation and release automation
+  flake.nix                        # Nix flake (dev shell; package build still WIP)
+  LICENSE                          # MIT
+  README.md                        # User-facing docs
+  DESIGN_NOTES.md                  # Deferred goals: distribution, sandbox, harness, multi-agent
 ```
 
 ### Key Internal Boundaries
 
 - **`internal/engine/`** (future) — The general-purpose composition engine will be extracted from `composer/` and `store/`. Design all composition logic to be format-agnostic where possible.
-- **`internal/model/`** — Domain types. `Module` and `ComposeFile` are the data model. `ComposedResult` carries merge metadata (dedup counts, conflicts).
+- **`internal/model/`** — Domain types. `Module` and `ComposeFile` are the data model. `Policy` is the format-neutral composed result (the source of truth); `ComposedResult` wraps it with merge metadata (dedup counts, conflicts). `Policy` deliberately carries no JSON tags — it is not a wire type.
 - **`internal/store/`** — Filesystem operations for the module store. Built-in modules are embedded via `go:embed` in `embed.go` and seeded on first use (skipping existing user modules).
-- **`internal/composer/`** — The merge engine. Resolves module dependencies (topological sort), concatenates permission arrays, deduplicates, detects conflicts (same rule in allow + deny).
-- **`internal/importer/`** — The adoption on-ramp. Matches existing settings.json rules against known modules and identifies unmatched rules for promotion into new modules.
+- **`internal/composer/`** — The merge engine. Resolves module dependencies (topological sort), concatenates permission arrays, deduplicates, detects conflicts (same rule in allow + deny), and returns a `Policy`. It has no knowledge of any wire format.
+- **`internal/render/`** — The wire-format adapter boundary. The `Renderer` interface (`Render`/`Parse`/`OutputPath`) is the only place that knows a concrete agent's settings-file shape; `ClaudeCode` is the sole implementation today (`.claude/settings.json`). A schema change — or a new agent target — is confined here. See DESIGN_NOTES.md, "Two axes of decoupling."
+- **`internal/importer/`** — The adoption on-ramp. `Analyze` matches a parsed set of permissions against known modules and identifies unmatched rules for promotion into new modules; parsing the settings file is the renderer's job, not the importer's.
 
 ## Data Flow
 
@@ -56,6 +60,10 @@ User's module store          Project compose.json
            │  Dedup         │  (uniqueStrings preserving order)
            │  Detect conflicts│ (same rule in multiple arrays)
            └───────┬────────┘
+                   │
+              model.Policy           (format-neutral source of truth)
+                   │
+            render.Renderer          (ClaudeCode adapter: Render / Parse)
                    │
             .claude/settings.json    (Claude Code reads this natively)
 ```
@@ -88,7 +96,8 @@ These live in `internal/store/builtins/` and are embedded into the binary. On fi
 
 - **cobra** — CLI framework
 - **lipgloss** — Terminal styling
-- **bubbletea** — Planned for interactive TUI (v0.2 — currently using simple stdin prompts)
+
+A bubbletea-based interactive TUI is planned for v0.2, but the dependency is **not** vendored yet — current prompts use `bufio.Reader`. (An earlier `go.mod` listed bubbletea while nothing imported it; that was removed during the revival.)
 
 ## What's Shipped (v0.1)
 
@@ -109,6 +118,7 @@ All commands: modules, modules show, init, compose, add, remove, status, new, ed
 cperm is the domain-specific "wedge" for a more general tool. The architecture is designed for extraction:
 
 - `internal/composer/` and `internal/store/` contain the general composition logic
+- `internal/render/` is the first realized adapter seam — additional formats or agent targets are new `Renderer` implementations behind the same interface (see DESIGN_NOTES.md, "Two axes of decoupling")
 - The general tool would support multiple **stores** (one per config domain) with per-store **merge strategies**
 - Merge strategy vocabulary: deep/shallow object merge, concat/concat-unique/replace/by-key array merge, last-wins/first-wins/warn/error conflict resolution
 - Format support: JSON, YAML, TOML, INI, text (line-based)
@@ -119,9 +129,12 @@ cperm is the domain-specific "wedge" for a more general tool. The architecture i
 ```bash
 go mod tidy                    # Fetch dependencies
 go build -o cperm .            # Build
-go test ./...                  # Run tests (when written)
-goreleaser release --snapshot  # Test release build
+go test ./...                  # Run tests (composer, render, store, importer)
+go vet ./...                   # Static checks
 ```
+
+Release automation (goreleaser, Homebrew tap, prebuilt binaries) is not wired up
+yet — see DESIGN_NOTES.md. Today the install path is build-from-source.
 
 ## Style Notes
 
