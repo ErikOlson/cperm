@@ -39,31 +39,19 @@ cperm import .claude/settings.json
 
 ## Install
 
-### Nix (recommended if you use Nix)
+`cperm` is pre-release and not yet published to a package registry. Build it from source:
 
 ```bash
-# Try without installing
-nix run github:erikmav/cperm -- modules
-
-# Add to your flake
-inputs.cperm.url = "github:erikmav/cperm";
+git clone https://github.com/erikmav/cperm
+cd cperm
+go build -o cperm .
+./cperm modules
 ```
 
-### Homebrew
+Requires Go 1.22+. A Nix flake is included for a dev shell (`nix develop`).
 
-```bash
-brew install erikmav/tap/cperm
-```
-
-### Go
-
-```bash
-go install github.com/erikmav/cperm@latest
-```
-
-### Binary
-
-Download from [GitHub Releases](https://github.com/erikmav/cperm/releases).
+> Packaged distribution — Homebrew tap, prebuilt release binaries, `go install`,
+> and `nix run` — is planned but not yet wired up. See [DESIGN_NOTES.md](DESIGN_NOTES.md).
 
 ## Quick Start
 
