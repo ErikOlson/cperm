@@ -8,9 +8,9 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	"github.com/spf13/cobra"
 
-	"github.com/erikmav/cperm/internal/model"
-	"github.com/erikmav/cperm/internal/render"
-	"github.com/erikmav/cperm/internal/store"
+	"github.com/erikolson/cperm/internal/model"
+	"github.com/erikolson/cperm/internal/render"
+	"github.com/erikolson/cperm/internal/store"
 )
 
 var (

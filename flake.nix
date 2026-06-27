@@ -24,7 +24,7 @@
 
           meta = with pkgs.lib; {
             description = "Composable Claude Code permissions — Nix-inspired configuration composition";
-            homepage = "https://github.com/erikmav/cperm";
+            homepage = "https://github.com/erikolson/cperm";
             license = licenses.mit;
             mainProgram = "cperm";
           };

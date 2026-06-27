@@ -8,7 +8,7 @@
 // implementation behind this interface.
 package render
 
-import "github.com/erikmav/cperm/internal/model"
+import "github.com/erikolson/cperm/internal/model"
 
 // Renderer translates between a model.Policy and a concrete configuration
 // wire format. One implementation exists today (ClaudeCode); the interface

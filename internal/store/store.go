@@ -8,7 +8,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/erikmav/cperm/internal/model"
+	"github.com/erikolson/cperm/internal/model"
 )
 
 const (

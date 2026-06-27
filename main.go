@@ -3,7 +3,7 @@ package main
 import (
 	"os"
 
-	"github.com/erikmav/cperm/cmd"
+	"github.com/erikolson/cperm/cmd"
 )
 
 func main() {

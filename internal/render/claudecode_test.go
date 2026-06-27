@@ -7,8 +7,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/erikmav/cperm/internal/model"
-	"github.com/erikmav/cperm/internal/render"
+	"github.com/erikolson/cperm/internal/model"
+	"github.com/erikolson/cperm/internal/render"
 )
 
 func TestRenderProducesClaudeCodeShape(t *testing.T) {

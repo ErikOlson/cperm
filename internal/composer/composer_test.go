@@ -4,9 +4,9 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/erikmav/cperm/internal/composer"
-	"github.com/erikmav/cperm/internal/model"
-	"github.com/erikmav/cperm/internal/store"
+	"github.com/erikolson/cperm/internal/composer"
+	"github.com/erikolson/cperm/internal/model"
+	"github.com/erikolson/cperm/internal/store"
 )
 
 // newTestStore returns a store backed by a throwaway temp dir, seeded with the

@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"path/filepath"
 
-	"github.com/erikmav/cperm/internal/model"
+	"github.com/erikolson/cperm/internal/model"
 )
 
 const (

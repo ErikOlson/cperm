@@ -1,4 +1,4 @@
-module github.com/erikmav/cperm
+module github.com/erikolson/cperm
 
 go 1.22
 

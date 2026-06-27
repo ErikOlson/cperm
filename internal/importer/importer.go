@@ -5,8 +5,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/erikmav/cperm/internal/model"
-	"github.com/erikmav/cperm/internal/store"
+	"github.com/erikolson/cperm/internal/model"
+	"github.com/erikolson/cperm/internal/store"
 )
 
 // MatchResult describes how well an existing settings.json matches a module.

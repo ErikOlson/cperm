@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"io/fs"
 
-	"github.com/erikmav/cperm/internal/model"
+	"github.com/erikolson/cperm/internal/model"
 )
 
 //go:embed all:builtins

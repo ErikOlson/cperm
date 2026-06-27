@@ -8,8 +8,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/erikmav/cperm/internal/composer"
-	"github.com/erikmav/cperm/internal/model"
+	"github.com/erikolson/cperm/internal/composer"
+	"github.com/erikolson/cperm/internal/model"
 )
 
 var initCmd = &cobra.Command{

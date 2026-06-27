@@ -42,7 +42,7 @@ cperm import .claude/settings.json
 `cperm` is pre-release and not yet published to a package registry. Build it from source:
 
 ```bash
-git clone https://github.com/erikmav/cperm
+git clone https://github.com/erikolson/cperm
 cd cperm
 go build -o cperm .
 ./cperm modules

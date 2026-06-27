@@ -6,8 +6,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/erikmav/cperm/internal/model"
-	"github.com/erikmav/cperm/internal/store"
+	"github.com/erikolson/cperm/internal/model"
+	"github.com/erikolson/cperm/internal/store"
 )
 
 const (
