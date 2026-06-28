@@ -41,19 +41,35 @@ cperm import .claude/settings.json
 
 ## Install
 
-`cperm` is pre-release and not yet published to a package registry. Build it from source:
+`cperm` isn't in a package manager yet, but it installs cleanly with Go.
+
+**With `go install`** (no clone needed):
+
+```bash
+go install github.com/erikolson/cperm@latest
+```
+
+**From source:**
 
 ```bash
 git clone https://github.com/erikolson/cperm
 cd cperm
 go build -o cperm .
-./cperm modules
 ```
 
-Requires Go 1.22+. A Nix flake is included for a dev shell (`nix develop`).
+Either way, the binary needs to be on your `PATH`. `go install` puts it in
+`$(go env GOPATH)/bin`; for a source build, copy it there yourself:
 
-> Packaged distribution — Homebrew tap, prebuilt release binaries, `go install`,
-> and `nix run` — is planned but not yet wired up. See [DESIGN_NOTES.md](DESIGN_NOTES.md).
+```bash
+mkdir -p "$(go env GOPATH)/bin" && cp cperm "$(go env GOPATH)/bin/"
+```
+
+If that directory isn't already on your `PATH`, add it (e.g.
+`export PATH="$(go env GOPATH)/bin:$PATH"` in your shell profile). Requires Go 1.22+.
+A Nix flake is included for a dev shell (`nix develop`).
+
+> A Homebrew tap, prebuilt release binaries, and `nix run` are planned but not yet
+> wired up — see [DESIGN_NOTES.md](DESIGN_NOTES.md).
 
 ## Quick Start
 

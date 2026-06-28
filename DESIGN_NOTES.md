@@ -12,7 +12,8 @@ they were advertised in an early README draft and have been pulled back to here 
   a goreleaser brew config to publish formulae on release.
 - **Prebuilt release binaries** — GitHub Releases via goreleaser cross-compilation.
   `CLAUDE.md` references a `.goreleaser.yaml` that is not in the tree yet; it must be written.
-- **`go install github.com/erikolson/cperm@latest`** — works once the repo is public and tagged.
+- **`go install github.com/erikolson/cperm@latest`** — available now (repo is public and
+  tagged); documented in the README. No longer deferred.
 - **`nix run github:erikolson/cperm`** — needs the flake's `vendorHash` resolved (currently
   `null`, which will not build a real package; only the dev shell works today).
 
