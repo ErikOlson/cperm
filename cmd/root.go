@@ -26,6 +26,9 @@ var (
 var rootCmd = &cobra.Command{
 	Use:   "cperm",
 	Short: "Composable Claude Code permissions",
+	// Don't print the usage block on a runtime error (e.g. no compose.json);
+	// usage is still shown for argument-parsing errors.
+	SilenceUsage: true,
 	Long: `cperm — composable Claude Code permissions
 
 A Nix-inspired tool for managing Claude Code permission configurations.

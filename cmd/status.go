@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"strings"
@@ -8,12 +9,59 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/erikolson/cperm/internal/composer"
+	"github.com/erikolson/cperm/internal/model"
 )
+
+var statusJSON bool
 
 var statusCmd = &cobra.Command{
 	Use:   "status",
 	Short: "Show current project's modules and detect drift from composed output",
 	RunE:  runStatus,
+}
+
+func init() {
+	statusCmd.Flags().BoolVar(&statusJSON, "json", false, "Emit the drift report as machine-readable JSON")
+}
+
+// permTriple mirrors a permissions block for JSON output.
+type permTriple struct {
+	Allow []string `json:"allow"`
+	Ask   []string `json:"ask"`
+	Deny  []string `json:"deny"`
+}
+
+// driftDetail captures rules that diverged in either direction.
+//
+// Added: present in settings.json but not in the composed state — i.e. manual
+// approvals that accumulated outside the modules. These are the candidates for
+// promotion into modules (the bottom-up loop's signal).
+//
+// Removed: present in the composed state but missing from settings.json.
+type driftDetail struct {
+	Added   permTriple `json:"added"`
+	Removed permTriple `json:"removed"`
+}
+
+func (d driftDetail) addedCount() int {
+	return len(d.Added.Allow) + len(d.Added.Ask) + len(d.Added.Deny)
+}
+
+func (d driftDetail) removedCount() int {
+	return len(d.Removed.Allow) + len(d.Removed.Ask) + len(d.Removed.Deny)
+}
+
+// driftReport is the machine-readable result of `cperm status --json`.
+type driftReport struct {
+	Project        string      `json:"project"`
+	Compose        string      `json:"compose"`
+	Modules        []string    `json:"modules"`
+	Settings       string      `json:"settings"`
+	SettingsExists bool        `json:"settingsExists"`
+	InSync         bool        `json:"inSync"`
+	AddedCount     int         `json:"addedCount"`
+	RemovedCount   int         `json:"removedCount"`
+	Drift          driftDetail `json:"drift"`
 }
 
 func runStatus(cmd *cobra.Command, args []string) error {
@@ -25,6 +73,11 @@ func runStatus(cmd *cobra.Command, args []string) error {
 	composePath := composer.ComposeFilePath(projectDir)
 	cf, err := composer.LoadComposeFile(composePath)
 	if err != nil {
+		// In JSON mode a missing compose.json is a non-zero exit so a hook can
+		// cheaply tell "this isn't a cperm project" and skip.
+		if statusJSON {
+			return fmt.Errorf("no compose.json in %s — run 'cperm init' first", projectDir)
+		}
 		fmt.Println("No compose.json found. Run 'cperm init' to get started.")
 		return nil
 	}
@@ -34,90 +87,129 @@ func runStatus(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	fmt.Println(titleStyle.Render("cperm status"))
-	fmt.Println()
-	fmt.Printf("  Project:  %s\n", projectDir)
-	fmt.Printf("  Compose:  %s (%d modules)\n", formatPath(composePath), len(cf.Modules))
-	fmt.Printf("  Modules:  %s\n", strings.Join(cf.Modules, ", "))
-
-	// Check if settings.json exists
 	outputPath := getRenderer().OutputPath(projectDir)
-	settingsData, err := os.ReadFile(outputPath)
-	if err != nil {
-		if os.IsNotExist(err) {
-			fmt.Println()
-			printWarn("settings.json does not exist. Run 'cperm compose' to create it.")
-			return nil
-		}
-		return err
+	report := driftReport{
+		Project:  projectDir,
+		Compose:  composePath,
+		Modules:  cf.Modules,
+		Settings: outputPath,
+		Drift:    emptyDrift(),
+	}
+	if report.Modules == nil {
+		report.Modules = []string{}
 	}
 
-	fmt.Printf("  Output:   %s\n", formatPath(outputPath))
+	settingsData, err := os.ReadFile(outputPath)
+	if err != nil {
+		if !os.IsNotExist(err) {
+			return err
+		}
+		report.SettingsExists = false
+		if statusJSON {
+			return printJSON(report)
+		}
+		return printStatusHuman(report)
+	}
+	report.SettingsExists = true
 
-	// Compose what it _should_ be
-	c := composer.New(s)
-	expected, err := c.Compose(cf)
+	expected, err := composer.New(s).Compose(cf)
 	if err != nil {
 		return fmt.Errorf("composing expected state: %w", err)
 	}
-
-	// Parse what actually exists
-	actualPolicy, err := getRenderer().Parse(settingsData)
+	actual, err := getRenderer().Parse(settingsData)
 	if err != nil {
 		return fmt.Errorf("parsing current settings.json: %w", err)
 	}
-	actual := actualPolicy.Permissions
 
-	// Diff
-	addedAllow := diffSlice(actual.Allow, expected.Policy.Permissions.Allow)
-	removedAllow := diffSlice(expected.Policy.Permissions.Allow, actual.Allow)
-	addedDeny := diffSlice(actual.Deny, expected.Policy.Permissions.Deny)
-	removedDeny := diffSlice(expected.Policy.Permissions.Deny, actual.Deny)
-	addedAsk := diffSlice(actual.Ask, expected.Policy.Permissions.Ask)
-	removedAsk := diffSlice(expected.Policy.Permissions.Ask, actual.Ask)
+	report.Drift = computeDrift(expected.Policy.Permissions, actual.Permissions)
+	report.AddedCount = report.Drift.addedCount()
+	report.RemovedCount = report.Drift.removedCount()
+	report.InSync = report.AddedCount == 0 && report.RemovedCount == 0
 
-	totalAdded := len(addedAllow) + len(addedDeny) + len(addedAsk)
-	totalRemoved := len(removedAllow) + len(removedDeny) + len(removedAsk)
+	if statusJSON {
+		return printJSON(report)
+	}
+	return printStatusHuman(report)
+}
 
+// computeDrift diffs the composed (expected) permissions against the actual
+// permissions read back from settings.json.
+func computeDrift(expected, actual model.Permissions) driftDetail {
+	return driftDetail{
+		Added: permTriple{
+			Allow: diffSlice(actual.Allow, expected.Allow),
+			Ask:   diffSlice(actual.Ask, expected.Ask),
+			Deny:  diffSlice(actual.Deny, expected.Deny),
+		},
+		Removed: permTriple{
+			Allow: diffSlice(expected.Allow, actual.Allow),
+			Ask:   diffSlice(expected.Ask, actual.Ask),
+			Deny:  diffSlice(expected.Deny, actual.Deny),
+		},
+	}
+}
+
+func emptyDrift() driftDetail {
+	empty := func() permTriple { return permTriple{Allow: []string{}, Ask: []string{}, Deny: []string{}} }
+	return driftDetail{Added: empty(), Removed: empty()}
+}
+
+func printJSON(report driftReport) error {
+	data, err := json.MarshalIndent(report, "", "  ")
+	if err != nil {
+		return err
+	}
+	fmt.Println(string(data))
+	return nil
+}
+
+func printStatusHuman(report driftReport) error {
+	fmt.Println(titleStyle.Render("cperm status"))
 	fmt.Println()
-	if totalAdded == 0 && totalRemoved == 0 {
+	fmt.Printf("  Project:  %s\n", report.Project)
+	fmt.Printf("  Compose:  %s (%d modules)\n", formatPath(report.Compose), len(report.Modules))
+	fmt.Printf("  Modules:  %s\n", strings.Join(report.Modules, ", "))
+
+	if !report.SettingsExists {
+		fmt.Println()
+		printWarn("settings.json does not exist. Run 'cperm compose' to create it.")
+		return nil
+	}
+
+	fmt.Printf("  Output:   %s\n", formatPath(report.Settings))
+	fmt.Println()
+
+	if report.InSync {
 		printSuccess("settings.json matches composed state — no drift detected")
 		return nil
 	}
 
-	printWarn(fmt.Sprintf("Drift detected: %d added, %d removed vs composed state", totalAdded, totalRemoved))
+	printWarn(fmt.Sprintf("Drift detected: %d added, %d removed vs composed state", report.AddedCount, report.RemovedCount))
 	fmt.Println()
 
-	if len(addedAllow) > 0 {
+	d := report.Drift
+	if d.addedCount() > 0 {
 		fmt.Println("  Rules in settings.json but not in compose (manual additions?):")
-		for _, r := range addedAllow {
+		for _, r := range d.Added.Allow {
 			fmt.Printf("    + allow: %s\n", successStyle.Render(r))
 		}
-	}
-	if len(addedDeny) > 0 {
-		for _, r := range addedDeny {
+		for _, r := range d.Added.Deny {
 			fmt.Printf("    + deny:  %s\n", successStyle.Render(r))
 		}
-	}
-	if len(addedAsk) > 0 {
-		for _, r := range addedAsk {
+		for _, r := range d.Added.Ask {
 			fmt.Printf("    + ask:   %s\n", successStyle.Render(r))
 		}
 	}
 
-	if len(removedAllow) > 0 {
+	if d.removedCount() > 0 {
 		fmt.Println("  Rules in compose but missing from settings.json:")
-		for _, r := range removedAllow {
+		for _, r := range d.Removed.Allow {
 			fmt.Printf("    - allow: %s\n", errorStyle.Render(r))
 		}
-	}
-	if len(removedDeny) > 0 {
-		for _, r := range removedDeny {
+		for _, r := range d.Removed.Deny {
 			fmt.Printf("    - deny:  %s\n", errorStyle.Render(r))
 		}
-	}
-	if len(removedAsk) > 0 {
-		for _, r := range removedAsk {
+		for _, r := range d.Removed.Ask {
 			fmt.Printf("    - ask:   %s\n", errorStyle.Render(r))
 		}
 	}
@@ -129,13 +221,14 @@ func runStatus(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-// diffSlice returns items in a that are not in b.
+// diffSlice returns the items in a that are not in b, as a non-nil slice
+// (so it renders as [] rather than null in JSON).
 func diffSlice(a, b []string) []string {
 	bSet := make(map[string]bool, len(b))
 	for _, s := range b {
 		bSet[s] = true
 	}
-	var diff []string
+	diff := []string{}
 	for _, s := range a {
 		if !bSet[s] {
 			diff = append(diff, s)
