@@ -141,6 +141,14 @@ The power of `cperm` is the **bottom-up discovery loop**:
 
 Your module store becomes a curated reflection of how you actually work, not an abstract wishlist.
 
+### Closing the loop automatically
+
+That loop only helps if you remember to run it. [`examples/`](examples/) wires it into
+Claude Code's hooks so it closes itself: a `Stop` hook runs `cperm status --json` and nudges
+you when rules have drifted, and a `/cperm-promote` skill clusters the drifted approvals and
+folds them into modules on your say-so. The deterministic part (detecting drift) stays in the
+CLI; the judgment part (which module a rule belongs to, what's junk) lives in the skill.
+
 ## For Agent Teams
 
 Agent teams inherit the lead's permissions at spawn time. Every permission prompt blocks a teammate's execution, so pre-approving generously matters more in multi-agent workflows. The `agent-teams` module enables the experimental feature and adds tmux permissions:

@@ -80,6 +80,15 @@ to run. The opportunity is to wire it into Claude Code's harness so the loop clo
    `sandbox` block to `settings.json` while the `/sandbox` panel writes `settings.local.json`, the
    local file wins and cperm's drift detection must account for it.
 
+3. **cperm's interactive commands block agent-driven use.** `init`, `new`, `edit`, and
+   `import` all prompt on stdin (or open `$EDITOR`), so an agent running the loop above
+   can't drive them — the `cperm-promote` skill (see `examples/`) has to edit the
+   module-store JSON directly and use only the non-interactive commands (`status`,
+   `compose`, `add`, `remove`, `modules`, `export`). The fix is scriptable variants:
+   `cperm new <name> --from-json -`, `cperm import --json`, a `--yes`/`--non-interactive`
+   flag, etc., so the agent uses the CLI as its API rather than reaching around it. The
+   `--json` flag on `status` was the first step in this direction.
+
 ## Two axes of decoupling
 
 The Phase 3 work (internal `Policy` as source of truth, a `render.Renderer` adapter, and a
