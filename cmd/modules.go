@@ -20,8 +20,11 @@ var modulesShowCmd = &cobra.Command{
 	RunE:  runModulesShow,
 }
 
+var modulesShowJSON bool
+
 func init() {
 	modulesCmd.AddCommand(modulesShowCmd)
+	modulesShowCmd.Flags().BoolVar(&modulesShowJSON, "json", false, "Output only the module JSON (no header)")
 }
 
 func runModulesList(cmd *cobra.Command, args []string) error {
@@ -86,6 +89,11 @@ func runModulesShow(cmd *cobra.Command, args []string) error {
 	data, err := json.MarshalIndent(mod, "", "  ")
 	if err != nil {
 		return err
+	}
+
+	if modulesShowJSON {
+		fmt.Println(string(data))
+		return nil
 	}
 
 	fmt.Println(titleStyle.Render(mod.Name) + "  " + dimStyle.Render(mod.Description))

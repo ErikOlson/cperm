@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"bufio"
+	"encoding/json"
 	"fmt"
 	"os"
 	"strings"
@@ -13,6 +14,13 @@ import (
 	"github.com/erikolson/cperm/internal/model"
 	"github.com/erikolson/cperm/internal/store"
 )
+
+var importJSON bool
+
+func init() {
+	importCmd.Flags().BoolVar(&importJSON, "json", false,
+		"Output the analysis as JSON and skip all prompts")
+}
 
 var importCmd = &cobra.Command{
 	Use:   "import [settings.json]",
@@ -54,6 +62,15 @@ func runImport(cmd *cobra.Command, args []string) error {
 	result, err := importer.Analyze(policy.Permissions, s)
 	if err != nil {
 		return err
+	}
+
+	if importJSON {
+		out, err := json.MarshalIndent(result, "", "  ")
+		if err != nil {
+			return err
+		}
+		fmt.Println(string(out))
+		return nil
 	}
 
 	fmt.Println(titleStyle.Render("cperm import"))

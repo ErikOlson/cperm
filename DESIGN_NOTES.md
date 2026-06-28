@@ -92,12 +92,13 @@ to run. The opportunity is to wire it into Claude Code's harness so the loop clo
 
 3. **cperm's interactive commands block agent-driven use.** `init`, `new`, `edit`, and
    `import` all prompt on stdin (or open `$EDITOR`), so an agent running the loop above
-   can't drive them — the `cperm-promote` skill (see `examples/`) has to edit the
-   module-store JSON directly and use only the non-interactive commands (`status`,
-   `compose`, `add`, `remove`, `modules`, `export`). The fix is scriptable variants:
-   `cperm new <name> --from-json -`, `cperm import --json`, a `--yes`/`--non-interactive`
-   flag, etc., so the agent uses the CLI as its API rather than reaching around it. The
-   `--json` flag on `status` was the first step in this direction.
+   couldn't drive them. *Mostly addressed:* `cperm new <name> --from-json - [--force]`
+   creates/overwrites a module from piped JSON, `cperm import --json` emits the analysis
+   non-interactively, and `cperm modules show <name> --json` / `cperm status --json` give
+   clean machine-readable reads. The `/cperm-promote` skill now drives cperm entirely
+   through these commands instead of editing the store by hand. Remaining: a non-interactive
+   `init` (`--yes` / `--modules a,b`) for first-time project setup — not needed by the
+   promote loop, which operates on already-initialized projects.
 
 ## Two axes of decoupling
 

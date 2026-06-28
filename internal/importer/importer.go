@@ -12,21 +12,21 @@ import (
 
 // MatchResult describes how well an existing settings.json matches a module.
 type MatchResult struct {
-	ModuleName string
-	Matched    []string // rules in the module that are present in the settings
-	Unmatched  []string // rules in the module NOT present in the settings
-	Total      int      // total rules in the module
-	Coverage   float64  // Matched / Total
+	ModuleName string   `json:"module"`
+	Matched    []string `json:"matched"`   // rules in the module that are present in the settings
+	Unmatched  []string `json:"unmatched"` // rules in the module NOT present in the settings
+	Total      int      `json:"total"`     // total rules in the module
+	Coverage   float64  `json:"coverage"`  // Matched / Total
 }
 
 // ImportResult holds the complete analysis of an import operation.
 type ImportResult struct {
-	Matches        []MatchResult
-	UnmatchedAllow []string // allow rules not covered by any module
-	UnmatchedDeny  []string
-	UnmatchedAsk   []string
-	TotalRules     int
-	CoveredRules   int
+	Matches        []MatchResult `json:"matches"`
+	UnmatchedAllow []string      `json:"unmatchedAllow"` // allow rules not covered by any module
+	UnmatchedDeny  []string      `json:"unmatchedDeny"`
+	UnmatchedAsk   []string      `json:"unmatchedAsk"`
+	TotalRules     int           `json:"totalRules"`
+	CoveredRules   int           `json:"coveredRules"`
 }
 
 // Analyze compares a set of permissions (already parsed from an agent's
@@ -173,7 +173,7 @@ func matchModule(mod *model.Module, perms *model.Permissions) MatchResult {
 }
 
 func diff(all []string, covered map[string]bool) []string {
-	var result []string
+	result := []string{}
 	for _, r := range all {
 		if !covered[r] {
 			result = append(result, r)
