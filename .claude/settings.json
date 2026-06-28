@@ -1,0 +1,53 @@
+{
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/cperm-drift-notify.sh",
+            "timeout": 30,
+            "type": "command"
+          }
+        ]
+      }
+    ]
+  },
+  "permissions": {
+    "allow": [
+      "Edit",
+      "Write",
+      "Read",
+      "TodoWrite",
+      "Bash(ls:*)",
+      "Bash(find:*)",
+      "Bash(grep:*)",
+      "Bash(rg:*)",
+      "Bash(cat:*)",
+      "Bash(head:*)",
+      "Bash(tail:*)",
+      "Bash(wc:*)",
+      "Bash(sort:*)",
+      "Bash(mkdir:*)",
+      "Bash(touch:*)",
+      "Bash(cp:*)",
+      "Bash(mv:*)",
+      "Bash(echo:*)",
+      "Bash(sed:*)",
+      "Bash(awk:*)",
+      "Bash(diff:*)",
+      "Bash(chmod:*)",
+      "Bash(lsof:*)",
+      "Bash(go:*)",
+      "Bash(golangci-lint:*)",
+      "Bash(dlv:*)",
+      "Bash(gotests:*)",
+      "Bash(staticcheck:*)",
+      "Bash(git:*)",
+      "Bash(gh:*)"
+    ],
+    "ask": [
+      "Bash(git push:*)",
+      "Bash(git push --force:*)"
+    ]
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "modules": ["base", "go", "git"],
+  "settings": {
+    "hooks": {
+      "Stop": [
+        {
+          "hooks": [
+            {
+              "type": "command",
+              "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/cperm-drift-notify.sh",
+              "timeout": 30
+            }
+          ]
+        }
+      ]
+    }
+  }
+}
