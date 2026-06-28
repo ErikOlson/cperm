@@ -100,6 +100,24 @@ to run. The opportunity is to wire it into Claude Code's harness so the loop clo
    `init` (`--yes` / `--modules a,b`) for first-time project setup — not needed by the
    promote loop, which operates on already-initialized projects.
 
+## Product direction: complete CLI surface, then a human-in-the-loop harness
+
+The end state has two layers, in order:
+
+1. **Every operation the loop needs is a first-class CLI command with rich
+   success/failure feedback.** The CLI should be a complete, scriptable surface — so a
+   human can drive the whole reconcile loop by hand, and an agent uses the exact same
+   commands as its API. No step should require reaching around the tool to hand-edit a
+   file. Threads D (read `settings.local.json`), A (`new --from-json`, `import --json`,
+   `modules show --json`), and the pattern-matching + `prune` work are all in service of
+   this: detect, read, write, and *clean up* drift, each as a command that reports clearly
+   what it did.
+2. **The agent-harness drives the loop, gated by an interactive review.** On top of the
+   complete CLI, the agent proposes the promotions/diff; the user **approves, rejects, or
+   sends it back to retry**; only then does it apply. The split stays clean: determinism
+   and feedback live in the CLI, proposal and judgment live in the agent, and approval
+   stays with the human.
+
 ## Two axes of decoupling
 
 The Phase 3 work (internal `Policy` as source of truth, a `render.Renderer` adapter, and a

@@ -38,6 +38,7 @@
       "Bash(chmod:*)",
       "Bash(lsof:*)",
       "Bash(go:*)",
+      "Bash(gofmt:*)",
       "Bash(golangci-lint:*)",
       "Bash(dlv:*)",
       "Bash(gotests:*)",
