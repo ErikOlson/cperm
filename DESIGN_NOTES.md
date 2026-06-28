@@ -44,6 +44,15 @@ worth pursuing:
    silently diverge. Drift detection should at minimum be aware of the local-overrides file,
    even if cperm continues to own only `settings.json`.
 
+   *Update (done): `cperm status` now reads overlay files via `render.OverlayPaths` and unions
+   their permissions into the effective state, so approvals written to `settings.local.json`
+   surface as drift, and `status --json` lists the `sources` it merged. Two follow-ups remain:
+   the **sandbox block** in that file is still not reconciled (cperm only parses permissions),
+   and drift matching is **exact-string** — a broad module rule like `Bash(git:*)` does not
+   suppress a narrower accumulated approval like `Bash(git add *)`, so they show as drift until
+   promoted or dropped. Pattern-aware (subsumption) matching would quiet that; for now the
+   `/cperm-promote` skill is told to recognize rules already covered by a module.*
+
 Note: confirm the exact precedence and that a `sandbox` block is honored in a checked-in
 `.claude/settings.json` (vs. only `settings.local.json` / `~/.claude/settings.json`) before
 building on this — the docs are explicit about the latter two scopes but do not show an

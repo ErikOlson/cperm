@@ -57,6 +57,7 @@ type driftReport struct {
 	Compose        string      `json:"compose"`
 	Modules        []string    `json:"modules"`
 	Settings       string      `json:"settings"`
+	Sources        []string    `json:"sources"`
 	SettingsExists bool        `json:"settingsExists"`
 	InSync         bool        `json:"inSync"`
 	AddedCount     int         `json:"addedCount"`
@@ -93,6 +94,7 @@ func runStatus(cmd *cobra.Command, args []string) error {
 		Compose:  composePath,
 		Modules:  cf.Modules,
 		Settings: outputPath,
+		Sources:  []string{},
 		Drift:    emptyDrift(),
 	}
 	if report.Modules == nil {
@@ -111,17 +113,37 @@ func runStatus(cmd *cobra.Command, args []string) error {
 		return printStatusHuman(report)
 	}
 	report.SettingsExists = true
+	report.Sources = []string{outputPath}
 
 	expected, err := composer.New(s).Compose(cf)
 	if err != nil {
 		return fmt.Errorf("composing expected state: %w", err)
 	}
-	actual, err := getRenderer().Parse(settingsData)
+	actualPolicy, err := getRenderer().Parse(settingsData)
 	if err != nil {
 		return fmt.Errorf("parsing current settings.json: %w", err)
 	}
+	effective := actualPolicy.Permissions
 
-	report.Drift = computeDrift(expected.Policy.Permissions, actual.Permissions)
+	// Layer overlay files (e.g. settings.local.json) on top, so drift reflects
+	// the effective state — including approvals written outside settings.json.
+	for _, op := range getRenderer().OverlayPaths(projectDir) {
+		data, rerr := os.ReadFile(op)
+		if rerr != nil {
+			if os.IsNotExist(rerr) {
+				continue
+			}
+			return rerr
+		}
+		overlay, perr := getRenderer().Parse(data)
+		if perr != nil {
+			return fmt.Errorf("parsing %s: %w", formatPath(op), perr)
+		}
+		effective = unionPermissions(effective, overlay.Permissions)
+		report.Sources = append(report.Sources, op)
+	}
+
+	report.Drift = computeDrift(expected.Policy.Permissions, effective)
 	report.AddedCount = report.Drift.addedCount()
 	report.RemovedCount = report.Drift.removedCount()
 	report.InSync = report.AddedCount == 0 && report.RemovedCount == 0
@@ -219,6 +241,30 @@ func printStatusHuman(report driftReport) error {
 	fmt.Println(dimStyle.Render("Run 'cperm import' to incorporate manual additions into modules"))
 
 	return nil
+}
+
+// unionPermissions merges two permission sets, deduplicating each array while
+// preserving first-seen order.
+func unionPermissions(a, b model.Permissions) model.Permissions {
+	return model.Permissions{
+		Allow: unionStrings(a.Allow, b.Allow),
+		Ask:   unionStrings(a.Ask, b.Ask),
+		Deny:  unionStrings(a.Deny, b.Deny),
+	}
+}
+
+func unionStrings(a, b []string) []string {
+	seen := make(map[string]bool, len(a)+len(b))
+	out := []string{}
+	for _, group := range [][]string{a, b} {
+		for _, s := range group {
+			if !seen[s] {
+				seen[s] = true
+				out = append(out, s)
+			}
+		}
+	}
+	return out
 }
 
 // diffSlice returns the items in a that are not in b, as a non-nil slice

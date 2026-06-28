@@ -53,3 +53,20 @@ func TestDiffSliceIsNonNil(t *testing.T) {
 		t.Errorf("diffSlice = %v, want empty", got)
 	}
 }
+
+func TestUnionPermissions(t *testing.T) {
+	a := model.Permissions{Allow: []string{"Read", "Edit"}, Ask: []string{"Bash(git push:*)"}}
+	b := model.Permissions{Allow: []string{"Edit", "Bash(curl:*)"}, Deny: []string{"Read(**/.env)"}}
+
+	got := unionPermissions(a, b)
+
+	if want := []string{"Read", "Edit", "Bash(curl:*)"}; !reflect.DeepEqual(got.Allow, want) {
+		t.Errorf("Allow = %v, want %v (deduped, order-preserving)", got.Allow, want)
+	}
+	if want := []string{"Bash(git push:*)"}; !reflect.DeepEqual(got.Ask, want) {
+		t.Errorf("Ask = %v, want %v", got.Ask, want)
+	}
+	if want := []string{"Read(**/.env)"}; !reflect.DeepEqual(got.Deny, want) {
+		t.Errorf("Deny = %v, want %v", got.Deny, want)
+	}
+}

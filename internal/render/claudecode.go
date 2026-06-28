@@ -10,6 +10,7 @@ import (
 const (
 	claudeDir      = ".claude"
 	settingsOutput = "settings.json"
+	settingsLocal  = "settings.local.json"
 )
 
 // ClaudeCode renders and parses Claude Code's .claude/settings.json format:
@@ -29,6 +30,13 @@ var _ Renderer = ClaudeCode{}
 // OutputPath returns <projectDir>/.claude/settings.json.
 func (ClaudeCode) OutputPath(projectDir string) string {
 	return filepath.Join(projectDir, claudeDir, settingsOutput)
+}
+
+// OverlayPaths returns <projectDir>/.claude/settings.local.json — the local,
+// gitignored file Claude Code writes interactive approvals into, which takes
+// precedence over settings.json.
+func (ClaudeCode) OverlayPaths(projectDir string) []string {
+	return []string{filepath.Join(projectDir, claudeDir, settingsLocal)}
 }
 
 // Render serializes a Policy to settings.json bytes with a trailing newline.

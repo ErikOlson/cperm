@@ -25,4 +25,11 @@ type Renderer interface {
 	// OutputPath returns the file the rendered configuration is written to
 	// for the given project directory.
 	OutputPath(projectDir string) string
+
+	// OverlayPaths returns additional files whose permissions layer on top of
+	// the rendered output to form the effective on-disk state — e.g. Claude
+	// Code's settings.local.json, which takes precedence and is where
+	// interactive approvals are written. Callers skip files that don't exist.
+	// Order is lowest-to-highest precedence.
+	OverlayPaths(projectDir string) []string
 }

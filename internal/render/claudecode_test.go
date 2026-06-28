@@ -135,3 +135,11 @@ func TestOutputPath(t *testing.T) {
 		t.Errorf("OutputPath = %q, want %q", got, want)
 	}
 }
+
+func TestOverlayPaths(t *testing.T) {
+	got := render.ClaudeCode{}.OverlayPaths("/proj")
+	want := []string{filepath.Join("/proj", ".claude", "settings.local.json")}
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("OverlayPaths = %v, want %v", got, want)
+	}
+}
