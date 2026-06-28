@@ -10,6 +10,7 @@ import (
 
 	"github.com/erikolson/cperm/internal/composer"
 	"github.com/erikolson/cperm/internal/model"
+	"github.com/erikolson/cperm/internal/rules"
 )
 
 var statusJSON bool
@@ -159,14 +160,14 @@ func runStatus(cmd *cobra.Command, args []string) error {
 func computeDrift(expected, actual model.Permissions) driftDetail {
 	return driftDetail{
 		Added: permTriple{
-			Allow: diffSlice(actual.Allow, expected.Allow),
-			Ask:   diffSlice(actual.Ask, expected.Ask),
-			Deny:  diffSlice(actual.Deny, expected.Deny),
+			Allow: uncovered(actual.Allow, expected.Allow),
+			Ask:   uncovered(actual.Ask, expected.Ask),
+			Deny:  uncovered(actual.Deny, expected.Deny),
 		},
 		Removed: permTriple{
-			Allow: diffSlice(expected.Allow, actual.Allow),
-			Ask:   diffSlice(expected.Ask, actual.Ask),
-			Deny:  diffSlice(expected.Deny, actual.Deny),
+			Allow: uncovered(expected.Allow, actual.Allow),
+			Ask:   uncovered(expected.Ask, actual.Ask),
+			Deny:  uncovered(expected.Deny, actual.Deny),
 		},
 	}
 }
@@ -267,18 +268,15 @@ func unionStrings(a, b []string) []string {
 	return out
 }
 
-// diffSlice returns the items in a that are not in b, as a non-nil slice
-// (so it renders as [] rather than null in JSON).
-func diffSlice(a, b []string) []string {
-	bSet := make(map[string]bool, len(b))
-	for _, s := range b {
-		bSet[s] = true
-	}
-	diff := []string{}
-	for _, s := range a {
-		if !bSet[s] {
-			diff = append(diff, s)
+// uncovered returns the rules in a that no rule in b covers — subsumption-aware
+// (a broad Bash(git:*) covers a narrow Bash(git add *)), not just exact match.
+// Returns a non-nil slice so it renders as [] rather than null in JSON.
+func uncovered(a, b []string) []string {
+	out := []string{}
+	for _, r := range a {
+		if !rules.CoveredBy(r, b) {
+			out = append(out, r)
 		}
 	}
-	return diff
+	return out
 }

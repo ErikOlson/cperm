@@ -43,14 +43,18 @@ func TestComputeDrift(t *testing.T) {
 	}
 }
 
-func TestDiffSliceIsNonNil(t *testing.T) {
-	// Empty diffs must be [] (non-nil) so the JSON report renders arrays, not null.
-	got := diffSlice([]string{"a"}, []string{"a"})
-	if got == nil {
-		t.Fatal("diffSlice returned nil; want empty non-nil slice")
+func TestUncovered(t *testing.T) {
+	// Empty result must be [] (non-nil) so the JSON report renders arrays, not null.
+	if got := uncovered([]string{"Read"}, []string{"Read"}); got == nil || len(got) != 0 {
+		t.Fatalf("uncovered(exact match) = %v, want empty non-nil slice", got)
 	}
-	if len(got) != 0 {
-		t.Errorf("diffSlice = %v, want empty", got)
+	// A narrow rule covered by a broad one is not reported as drift.
+	if got := uncovered([]string{"Bash(git add *)"}, []string{"Bash(git:*)"}); len(got) != 0 {
+		t.Errorf("uncovered = %v, want [] (git add * is covered by git:*)", got)
+	}
+	// A genuinely novel rule is reported.
+	if got := uncovered([]string{"Bash(npm test)"}, []string{"Bash(git:*)"}); len(got) != 1 {
+		t.Errorf("uncovered = %v, want [Bash(npm test)]", got)
 	}
 }
 

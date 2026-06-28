@@ -47,6 +47,7 @@ func init() {
 	rootCmd.AddCommand(addCmd)
 	rootCmd.AddCommand(removeCmd)
 	rootCmd.AddCommand(statusCmd)
+	rootCmd.AddCommand(pruneCmd)
 	rootCmd.AddCommand(newModuleCmd)
 	rootCmd.AddCommand(editCmd)
 	rootCmd.AddCommand(importCmd)

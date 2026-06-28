@@ -25,13 +25,11 @@ all the commands below are non-interactive.
    - `cperm modules` lists existing modules; `cperm import --json` reports which
      existing modules already cover which rules. Prefer *extending an existing
      module* over creating a new one when rules clearly belong to it.
-   - Note that drift matching is exact-string: a broad rule already in a module
-     (e.g. `Bash(git:*)`) will not have suppressed a narrower approval
-     (`Bash(git add *)`), so such rules show as drift but are already covered —
-     **drop them** rather than re-adding.
-   - Also **drop one-off junk**: a frozen, hyper-specific command that will never
-     recur (a long ad-hoc `grep`/`awk` pipeline, a one-time script path). Say
-     what you're skipping and why.
+   - `cperm status` is subsumption-aware, so rules a module already covers
+     (e.g. `Bash(git add *)` under `Bash(git:*)`) won't appear as drift at all —
+     what remains is genuinely novel. **Drop one-off junk**: a frozen,
+     hyper-specific command that will never recur (a long ad-hoc `grep`/`awk`
+     pipeline, a one-time script path). Say what you're skipping and why.
 
 3. **Propose before changing anything.** Show the user a concrete plan: which
    rules go into which module (existing or new), what you'd drop, and why. Wait
@@ -48,10 +46,13 @@ all the commands below are non-interactive.
      project's `.claude/compose.json`.
    - **Project-specific one-offs** that are real but don't merit a module: add
      them to the `override` block of `.claude/compose.json` (edit the file).
-   - Then run `cperm compose` followed by `cperm status` to confirm drift is gone.
+   - Then `cperm compose` to regenerate settings.json, `cperm prune` to remove any
+     now-redundant rules from `settings.local.json` (use `cperm prune --dry-run` to
+     preview — it only removes rules a module already covers), and `cperm status` to
+     confirm only genuine drift remains.
 
 5. **Summarize** what moved where, and what you dropped.
 
 Keep the module store a curated reflection of how the user actually works: broad,
-reusable rules in modules; genuine one-offs in overrides; junk and
-already-covered rules discarded.
+reusable rules in modules; genuine one-offs in overrides; junk dropped.
+Already-covered rules are handled automatically by `cperm prune`.

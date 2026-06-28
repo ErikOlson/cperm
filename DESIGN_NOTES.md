@@ -49,10 +49,11 @@ worth pursuing:
    their permissions into the effective state, so approvals written to `settings.local.json`
    surface as drift, and `status --json` lists the `sources` it merged. Two follow-ups remain:
    the **sandbox block** in that file is still not reconciled (cperm only parses permissions),
-   and drift matching is **exact-string** — a broad module rule like `Bash(git:*)` does not
-   suppress a narrower accumulated approval like `Bash(git add *)`, so they show as drift until
-   promoted or dropped. Pattern-aware (subsumption) matching would quiet that; for now the
-   `/cperm-promote` skill is told to recognize rules already covered by a module.*
+   and drift matching used to be **exact-string**. *Now done:* `internal/rules` implements
+   subsumption (a broad `Bash(git:*)` covers a narrow `Bash(git add *)`); `cperm status` uses it
+   so covered rules no longer show as drift, and `cperm prune` removes rules from
+   `settings.local.json` that a module already covers. The remaining gap is the **sandbox block**
+   in that file, which cperm still doesn't reconcile (it parses only permissions).*
 
 Note: confirm the exact precedence and that a `sandbox` block is honored in a checked-in
 `.claude/settings.json` (vs. only `settings.local.json` / `~/.claude/settings.json`) before
